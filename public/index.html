@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>泼茶 v0.1 · 杭州读书与吉光片羽</title>
+<style>
+  :root {
+    /* 茶褐松绿旧纸调 */
+    --paper:   #F7F2E8;   /* 旧纸主背景 */
+    --paper-2: #EFE7D5;   /* 浅米 */
+    --paper-3: #E5DBC4;   /* 米褐 */
+    --ink:     #2B2A26;   /* 墨黑 */
+    --ink-2:   #5C564B;   /* 副墨 */
+    --ink-3:   #8C8576;   /* 浅墨 */
+    --tea:     #8B6F47;   /* 茶褐 */
+    --tea-2:   #A8895E;   /* 浅茶褐 */
+    --tea-3:   #6E5535;   /* 深茶褐 */
+    --pine:    #4A6B4A;   /* 松绿 */
+    --pine-2:  #6B8A6B;   /* 浅松绿 */
+    --line:    #DCD2BC;   /* 旧纸细线 */
+    --gold:    #B89968;   /* 描金 */
+    /* 心情色（纸片底） */
+    --m-blue:  #DDE6EE;
+    --m-pink:  #EFDDD8;
+    --m-yellow:#F1E5C4;
+    --m-green: #D8E2D0;
+    --m-purple:#E0D8E5;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Songti SC", "Source Han Serif SC", "Noto Serif CJK SC", serif;
+    background: var(--paper);
+    color: var(--ink);
+    line-height: 1.7;
+    /* 旧纸纹理 */
+    background-image:
+      radial-gradient(circle at 20% 30%, rgba(139,111,71,0.05) 0%, transparent 50%),
+      radial-gradient(circle at 80% 70%, rgba(74,107,74,0.04) 0%, transparent 50%),
+      radial-gradient(circle at 50% 50%, rgba(139,111,71,0.03) 0%, transparent 70%);
+    min-height: 100vh;
+  }
+
+  /* ========== 头 ========== */
+  header {
+    text-align: center;
+    padding: 40px 24px 20px;
+    border-bottom: 1px solid var(--line);
+  }
+  header h1 {
+    margin: 0;
+    font-size: 42px;
+    font-weight: 400;
+    letter-spacing: 12px;
+    color: var(--tea-3);
+    text-indent: 12px;  /* 抵消最后一字的 letter-spacing */
+    font-family: "Songti SC", "STSong", "Source Han Serif SC", serif;
+  }
+  header .verse {
+    margin-top: 10px;
+    font-size: 13px;
+    color: var(--ink-3);
+    letter-spacing: 4px;
+    font-style: italic;
+  }
+  header .verse::before { content: "—— "; }
+
+  /* ========== Tab 切换 ========== */
+  .tabs {
+    display: flex;
+    justify-content: center;
+    gap: 60px;
+    padding: 20px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .tab {
+    padding: 6px 4px;
+    font-size: 15px;
+    color: var(--ink-3);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all .2s;
+    letter-spacing: 2px;
+    user-select: none;
+  }
+  .tab:hover { color: var(--tea); }
+  .tab.active {
+    color: var(--tea-3);
+    border-bottom-color: var(--tea);
+    font-weight: 600;
+  }
+
+  /* ========== 容器 ========== */
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 32px 24px 80px;
+  }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ========== Tab1 本周书桌 ========== */
+  .panel-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--line);
+  }
+  .panel-head h2 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--tea-3);
+    letter-spacing: 3px;
+  }
+  .panel-head .sub {
+    font-size: 12px;
+    color: var(--ink-3);
+  }
+
+  .filters {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+  .chip {
+    padding: 5px 14px;
+    border: 1px solid var(--line);
+    border-radius: 99px;
+    font-size: 12px;
+    color: var(--ink-2);
+    cursor: pointer;
+    user-select: none;
+    background: rgba(255,255,255,0.4);
+    transition: all .15s;
+  }
+  .chip:hover { border-color: var(--tea-2); color: var(--tea); }
+  .chip.active {
+    background: var(--tea-3);
+    color: #fff;
+    border-color: var(--tea-3);
+  }
+
+  .desk-grid {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 28px;
+  }
+  @media (max-width: 900px) { .desk-grid { grid-template-columns: 1fr; } }
+
+  .event-list { display: flex; flex-direction: column; gap: 14px; }
+  .event {
+    display: grid;
+    grid-template-columns: 70px 1fr auto;
+    gap: 16px;
+    background: rgba(255,255,255,0.55);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 16px 18px;
+    transition: all .2s;
+  }
+  .event:hover {
+    border-color: var(--tea-2);
+    background: rgba(255,255,255,0.8);
+    transform: translateX(2px);
+  }
+  .event .date-stamp {
+    text-align: center;
+    border-right: 1px dashed var(--line);
+    padding-right: 12px;
+  }
+  .event .date-stamp .month {
+    font-size: 11px;
+    color: var(--ink-3);
+    letter-spacing: 1px;
+  }
+  .event .date-stamp .day {
+    font-size: 22px;
+    color: var(--tea-3);
+    font-weight: 600;
+    line-height: 1.2;
+    margin: 2px 0;
+  }
+  .event .date-stamp .week {
+    font-size: 10px;
+    color: var(--ink-3);
+  }
+  .event .info .title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 4px;
+    line-height: 1.4;
+  }
+  .event .info .venue {
+    font-size: 12px;
+    color: var(--tea);
+    margin-bottom: 6px;
+  }
+  .event .info .venue::before { content: "📍 "; opacity: .7; }
+  .event .info .meta {
+    font-size: 12px;
+    color: var(--ink-3);
+    line-height: 1.6;
+  }
+  .event .info .meta span { margin-right: 12px; }
+  .event .info .topic {
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--ink-2);
+    line-height: 1.5;
+    font-style: italic;
+  }
+  .event .actions {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: flex-end;
+  }
+  .conf-badge {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 99px;
+    background: var(--paper-2);
+    color: var(--ink-3);
+    border: 1px solid var(--line);
+  }
+  .conf-badge.high   { color: var(--pine);  border-color: var(--pine-2); background: var(--m-green); }
+  .conf-badge.medium { color: var(--tea);   border-color: var(--tea-2); }
+  .conf-badge.low    { color: var(--ink-3); }
+  .btn-want {
+    padding: 5px 12px;
+    background: var(--tea-3);
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    font-size: 11px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    font-family: inherit;
+  }
+  .btn-want:hover { background: var(--tea); }
+  .btn-want.copied { background: var(--pine); }
+
+  /* 右侧地图 + 书店列表 */
+  .side-col { display: flex; flex-direction: column; gap: 20px; position: sticky; top: 20px; align-self: flex-start; }
+  .map-card, .venue-card {
+    background: rgba(255,255,255,0.55);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 16px;
+  }
+  .map-card h3, .venue-card h3 {
+    margin: 0 0 12px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--tea-3);
+    letter-spacing: 2px;
+    padding-bottom: 8px;
+    border-bottom: 1px dashed var(--line);
+  }
+  svg.bookmap { width: 100%; height: auto; display: block; }
+  .v-marker { fill: var(--tea-3); stroke: var(--paper); stroke-width: 1.5; cursor: pointer; transition: all .2s; }
+  .v-marker:hover, .v-marker.active { fill: var(--pine); r: 7; }
+  .v-label { font-size: 9px; fill: var(--ink); paint-order: stroke; stroke: var(--paper); stroke-width: 2.5; }
+
+  .venue-list { display: flex; flex-direction: column; gap: 10px; }
+  .venue-item {
+    display: flex;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px dashed var(--line);
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .venue-item:last-child { border-bottom: none; }
+  .venue-item:hover { color: var(--tea); }
+  .venue-item .v-num {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--tea-3);
+    color: #fff;
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .venue-item .v-info .v-name { font-size: 13px; font-weight: 600; color: var(--ink); }
+  .venue-item .v-info .v-area { font-size: 11px; color: var(--ink-3); margin-top: 2px; }
+
+  /* ========== Tab2 吉光片羽 ========== */
+  /* 标签筛选（取代词云） */
+  .tag-filter {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+    align-items: center;
+  }
+  .tag-chip {
+    padding: 4px 12px;
+    border: 1px solid var(--line);
+    border-radius: 99px;
+    font-size: 12px;
+    color: var(--ink-2);
+    cursor: pointer;
+    user-select: none;
+    background: rgba(255,255,255,0.4);
+    transition: all .15s;
+  }
+  .tag-chip:hover { border-color: var(--tea-2); color: var(--tea); }
+  .tag-chip.active { background: var(--tea-3); color: #fff; border-color: var(--tea-3); }
+  .tag-chip .cnt { opacity: .6; font-size: 10px; margin-left: 2px; }
+
+  /* 纸片墙 */
+  .wall {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+    margin-bottom: 40px;
+  }
+  .note {
+    background: var(--m-blue);
+    border-radius: 2px;
+    padding: 20px 18px 16px;
+    box-shadow:
+      0 1px 2px rgba(0,0,0,.05),
+      0 4px 12px rgba(0,0,0,.04);
+    position: relative;
+    transform: rotate(var(--rot, 0deg));
+    transition: all .25s;
+    cursor: default;
+  }
+  .note:hover { transform: rotate(0deg) translateY(-3px); box-shadow: 0 4px 16px rgba(0,0,0,.1); }
+  .note.c-blue   { background: var(--m-blue); }
+  .note.c-pink   { background: var(--m-pink); }
+  .note.c-yellow { background: var(--m-yellow); }
+  .note.c-green  { background: var(--m-green); }
+  .note.c-purple { background: var(--m-purple); }
+
+  .note .content {
+    font-size: 14px;
+    color: var(--ink);
+    line-height: 1.75;
+    font-family: "Songti SC", serif;
+    min-height: 60px;
+  }
+  .note .quote-open, .note .quote-close {
+    color: var(--ink-3);
+    font-size: 18px;
+    line-height: 0;
+    position: relative;
+    top: 4px;
+  }
+  .note .source {
+    margin-top: 12px;
+    font-size: 11px;
+    color: var(--ink-2);
+    font-style: italic;
+    padding-bottom: 8px;
+    border-bottom: 1px dashed rgba(0,0,0,.1);
+  }
+  .note .source::before { content: "— "; }
+  .note .footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+    font-size: 11px;
+    color: var(--ink-3);
+  }
+  .note .footer .author { font-weight: 600; }
+  .note .footer .mbti {
+    background: rgba(43,42,38,0.08);
+    padding: 1px 6px;
+    border-radius: 99px;
+    margin-left: 4px;
+    font-size: 10px;
+    letter-spacing: 1px;
+  }
+  .note .footer .tags { color: var(--tea); }
+  .note .reach {
+    margin-top: 8px;
+    padding: 4px 10px;
+    background: rgba(255,255,255,0.5);
+    border: 1px solid rgba(0,0,0,.08);
+    border-radius: 99px;
+    font-size: 11px;
+    color: var(--tea-3);
+    cursor: pointer;
+    text-align: center;
+    transition: all .15s;
+  }
+  .note .reach:hover { background: var(--tea-3); color: #fff; border-color: var(--tea-3); }
+
+  /* 投递表单 */
+  .drop-box {
+    background: rgba(255,255,255,0.6);
+    border: 2px dashed var(--tea-2);
+    border-radius: 4px;
+    padding: 28px 24px;
+    margin-top: 40px;
+  }
+  .drop-box h3 {
+    margin: 0 0 6px;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--tea-3);
+    letter-spacing: 3px;
+    text-align: center;
+  }
+  .drop-box .hint {
+    text-align: center;
+    font-size: 12px;
+    color: var(--ink-3);
+    margin-bottom: 20px;
+  }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  @media (max-width: 700px) { .form-row { grid-template-columns: 1fr 1fr; } }
+  .form-field label {
+    display: block;
+    font-size: 11px;
+    color: var(--ink-2);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  .form-field input, .form-field select, .form-field textarea {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    font-size: 13px;
+    font-family: inherit;
+    color: var(--ink);
+    background: var(--paper);
+    outline: none;
+  }
+  .form-field input:focus, .form-field select:focus, .form-field textarea:focus {
+    border-color: var(--tea); background: #fff;
+  }
+  .form-field textarea { resize: vertical; min-height: 80px; font-family: "Songti SC", serif; line-height: 1.7; }
+  .form-field-full { grid-column: 1 / -1; }
+  .color-picker { display: flex; gap: 6px; padding-top: 4px; }
+  .color-dot {
+    width: 24px; height: 24px; border-radius: 50%;
+    cursor: pointer; border: 2px solid transparent;
+    transition: all .15s;
+  }
+  .color-dot.active { border-color: var(--ink); transform: scale(1.1); }
+  .color-dot.blue   { background: var(--m-blue); }
+  .color-dot.pink   { background: var(--m-pink); }
+  .color-dot.yellow { background: var(--m-yellow); }
+  .color-dot.green  { background: var(--m-green); }
+  .color-dot.purple { background: var(--m-purple); }
+  .form-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 18px; }
+  .form-actions .reach-toggle { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-2); }
+  .form-actions .reach-toggle input { width: auto; }
+  .btn-submit {
+    padding: 10px 32px;
+    background: var(--tea-3);
+    color: #fff;
+    border: none;
+    border-radius: 3px;
+    font-size: 13px;
+    font-family: inherit;
+    letter-spacing: 3px;
+    cursor: pointer;
+    transition: background .15s;
+  }
+  .btn-submit:hover { background: var(--ink); }
+
+  .empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--ink-3);
+    font-size: 13px;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(120px);
+    background: var(--ink);
+    color: var(--paper);
+    padding: 12px 28px;
+    border-radius: 99px;
+    font-size: 13px;
+    box-shadow: 0 4px 16px rgba(0,0,0,.2);
+    transition: transform .3s;
+    z-index: 1000;
+    pointer-events: none;
+    letter-spacing: 2px;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>泼茶</h1>
+  <div class="verse">且将新火试新茶，诗酒趁年华</div>
+</header>
+
+<div class="tabs">
+  <div class="tab active" data-panel="desk">本周书桌</div>
+  <div class="tab" data-panel="feather">吉光片羽</div>
+</div>
+
+<div class="container">
+
+<!-- ============ Tab 1：本周书桌 ============ -->
+<div class="tab-panel active" id="panel-desk">
+  <div class="panel-head">
+    <h2>本周书桌</h2>
+    <div class="sub">杭州 6 家书店 · 近 14 天读书活动 · <span id="evCount">…</span> 场</div>
+  </div>
+
+  <div class="filters" id="filters">
+    <span class="chip active" data-filter="all">全部</span>
+    <!-- 动态注入书店 chip -->
+  </div>
+
+  <div class="desk-grid">
+    <div class="event-list" id="eventList"></div>
+
+    <div class="side-col">
+      <div class="map-card">
+        <h3>书店地图</h3>
+        <svg class="bookmap" viewBox="0 0 320 260" xmlns="http://www.w3.org/2000/svg">
+          <!-- 极简底图 -->
+          <rect width="320" height="260" fill="#F0EAD8"/>
+          <!-- 西湖 -->
+          <ellipse cx="155" cy="155" rx="40" ry="32" fill="#C5D8C5" opacity=".6"/>
+          <text x="155" y="159" font-size="10" fill="var(--pine)" text-anchor="middle" font-family="Songti SC, serif">西湖</text>
+          <!-- 钱塘江 -->
+          <path d="M 0 240 Q 100 220 200 240 Q 280 250 320 230 L 320 260 L 0 260 Z" fill="#C5D8E0" opacity=".7"/>
+          <text x="240" y="252" font-size="9" fill="var(--tea-3)" text-anchor="middle">钱塘江</text>
+          <!-- 京杭运河 -->
+          <path d="M 200 0 Q 210 80 220 160 Q 230 230 235 260" fill="none" stroke="#C5D8E0" stroke-width="6" opacity=".7"/>
+          <!-- 良渚标记 -->
+          <rect x="40" y="40" width="60" height="36" rx="4" fill="#E8DFC5" opacity=".5" stroke="var(--gold)" stroke-width="1" stroke-dasharray="2 2"/>
+          <text x="70" y="62" font-size="9" fill="var(--tea-3)" text-anchor="middle" font-family="Songti SC, serif">良渚</text>
+
+          <g id="venueMarkers"></g>
+        </svg>
+      </div>
+
+      <div class="venue-card">
+        <h3>六家书店</h3>
+        <div class="venue-list" id="venueList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Tab 2：吉光片羽 ============ -->
+<div class="tab-panel" id="panel-feather">
+  <div class="panel-head">
+    <h2>吉光片羽</h2>
+    <div class="sub">半匿名读书札记墙 · 共 <span id="featherCount">…</span> 片</div>
+  </div>
+
+  <div class="tag-filter" id="tagFilter"></div>
+
+  <div class="wall" id="wall"></div>
+
+  <div class="drop-box">
+    <h3>投一片羽毛</h3>
+    <div class="hint">把日记里那些不会发朋友圈的句子，悄悄放在这里</div>
+
+    <form id="dropForm" onsubmit="return false;">
+      <div class="form-row">
+        <div class="form-field">
+          <label>花名</label>
+          <input type="text" id="f-name" placeholder="任取一名" maxlength="12" required>
+        </div>
+        <div class="form-field">
+          <label>MBTI</label>
+          <select id="f-mbti">
+            <option value="">不写</option>
+            <option>INTJ</option><option>INTP</option><option>ENTJ</option><option>ENTP</option>
+            <option>INFJ</option><option>INFP</option><option>ENFJ</option><option>ENFP</option>
+            <option>ISTJ</option><option>ISFJ</option><option>ESTJ</option><option>ESFJ</option>
+            <option>ISTP</option><option>ISFP</option><option>ESTP</option><option>ESFP</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label>小标题</label>
+          <input type="text" id="f-title" placeholder="给这片羽毛取个名" maxlength="20">
+        </div>
+        <div class="form-field">
+          <label>书名 / 出处</label>
+          <input type="text" id="f-source" placeholder="《xxx》· 章节 / 日记 6.26" maxlength="40">
+        </div>
+      </div>
+
+      <div class="form-field form-field-full" style="margin-bottom: 12px;">
+        <label>吉光片羽</label>
+        <textarea id="f-content" placeholder="一两句话即可。20–80 字最适合。" maxlength="200" required></textarea>
+      </div>
+
+      <div class="form-row">
+        <div class="form-field" style="grid-column: span 3;">
+          <label>标签（最多 3 个，用空格隔开）</label>
+          <input type="text" id="f-tags" placeholder="例：独处 夜晚 温柔" maxlength="30">
+        </div>
+        <div class="form-field">
+          <label>心情色</label>
+          <div class="color-picker" id="colorPicker">
+            <div class="color-dot blue active"   data-c="蓝"></div>
+            <div class="color-dot pink"          data-c="粉"></div>
+            <div class="color-dot yellow"        data-c="黄"></div>
+            <div class="color-dot green"         data-c="绿"></div>
+            <div class="color-dot purple"        data-c="紫"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <label class="reach-toggle">
+          <input type="checkbox" id="f-reach" checked>
+          允许"想找TA聊聊"按钮显示在这片羽毛上
+        </label>
+        <button class="btn-submit" id="btnSubmit">投 递</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+</div>
+
+<div class="toast" id="toast">已复制</div>
+
+<script>
+// ====================================================
+// 杭州读书活动数据（由 Agent 抓取）
+// ====================================================
+const READING_EVENTS = [
+  { venue:"良渚大屋顶",         title:"晓书馆周末公益阅读分享", date:"每周六",      time:"14:00-16:00", host:"晓书馆驻馆馆员", topic:"馆藏精选共读 · 自由阅读+读书笔记分享", fee:"免费（公众号预约）", confidence:"medium" },
+  { venue:"良渚大屋顶",         title:"夏季作家沙龙 · 书博会预热", date:"2026-07-04", time:"19:00-21:00", host:"待官方公布", topic:"配合全国书博会预热的作家分享", fee:"免费/凭票", confidence:"low" },
+  { venue:"单向空间·乐堤港店", title:"夜读 · 自带书共读", date:"每周五",      time:"19:30-21:30", host:"店员+读者轮值", topic:"自带一本书来读，自由分享", fee:"免费（到店登记）", confidence:"medium" },
+  { venue:"单向空间·良渚店",   title:"孤独之心俱乐部·第二期 女性友谊", date:"2026-06-27", time:"19:00-21:00", host:"杭州单向空间", topic:"《明亮的夜晚》(崔恩荣)共读 · 带主题书参与可盲抽他人带来的书 · 含「普通女人的友谊」主题书展", fee:"小程序报名（参考 ¥30–50）", confidence:"high" },
+  { venue:"茑屋书店·天目里",   title:"周末艺术家分享会",    date:"每周日",      time:"15:00-17:00", host:"天目里艺术家轮值", topic:"艺术书+生活方式主题对谈", fee:"免费（小程序预约）", confidence:"medium" },
+  { venue:"茑屋书店·天目里",   title:"《山海不惊》画册作者签售", date:"2026-07-05", time:"14:00-16:00", host:"《山海不惊》主创团队", topic:"画册导览+签售", fee:"免费（凭购书入场）", confidence:"medium" },
+  { venue:"纯真年代书吧",       title:"黄梵诗集分享 · 宝石山诗会", date:"2026-06-27", time:"15:00-17:00", host:"黄梵 × 沈苇 × 高兴", topic:"新诗集朗读与诗歌翻译漫谈", fee:"免费（公众号报名）", confidence:"high" },
+  { venue:"纯真年代书吧",       title:"宝石山读书会 · 夏夜书友夜话", date:"每周六", time:"19:30-21:30", host:"朱锦绣+轮值嘉宾", topic:"西湖夜读 · 文学经典共读", fee:"¥30（含茶水）", confidence:"medium" },
+  { venue:"晓风书屋·体育场路", title:"周六大咖邀约 · 宋人生活专场", date:"每周六", time:"19:00-21:00", host:"浙江文史学者轮值", topic:"读书品茶观画 · 宋韵生活美学", fee:"免费（公众号预约）", confidence:"high" },
+  { venue:"晓风书屋·浙图店",   title:"浙图·晓风周末新书分享", date:"2026-07-05", time:"14:30-16:30", host:"浙图馆员+新书作者", topic:"浙版新书首发分享", fee:"免费", confidence:"medium" },
+  { venue:"钟书阁·滨江",       title:"书博会·钟书阁滨江作家见面", date:"2026-07-10", time:"19:00-21:00", host:"书博会联动作家", topic:"作家见面会", fee:"免费", confidence:"low" },
+  { venue:"钟书阁·滨江",       title:"亲子绘本共读",        date:"每周日",      time:"10:30-11:30", host:"阅读推广人", topic:"亲子绘本+童书新书", fee:"免费（到店登记）", confidence:"medium" },
+  { venue:"豆瓣同城·杭州",     title:"带本书来聊天 · 韩江系列", date:"每周六 6/27–8/22", time:"14:00-16:30", host:"露水电影", topic:"韩江作品共读", fee:"¥30/人", confidence:"high" },
+  { venue:"豆瓣同城·杭州",     title:"带本书来聊天 · 按图索AI", date:"每周六 6/13–8/01", time:"14:00-16:30", host:"露水电影", topic:"AI主题图书共读", fee:"¥30/人", confidence:"high" }
+];
+
+// 六家固定书店 POI（用于地图）
+const VENUES = [
+  { id:"dawu",     name:"良渚大屋顶",       area:"良渚", x:70,  y:62  },
+  { id:"oneway",   name:"单向空间",         area:"湖滨", x:175, y:160 },
+  { id:"tsutaya",  name:"茑屋·天目里",      area:"西溪", x:115, y:120 },
+  { id:"chunzhen", name:"纯真年代",         area:"宝石山",x:155, y:130 },
+  { id:"xiaofeng", name:"晓风·体育场路",    area:"武林", x:180, y:120 },
+  { id:"zhongshu", name:"钟书阁·滨江",      area:"滨江", x:215, y:215 }
+];
+
+// venue → poi 映射
+function venuePoi(venueName){
+  if (venueName.includes("大屋顶"))   return "dawu";
+  if (venueName.includes("单向"))     return "oneway";
+  if (venueName.includes("茑屋"))     return "tsutaya";
+  if (venueName.includes("纯真"))     return "chunzhen";
+  if (venueName.includes("晓风"))     return "xiaofeng";
+  if (venueName.includes("钟书"))     return "zhongshu";
+  return null;
+}
+
+// ====================================================
+// 种子吉光片羽：现在改由 /api/feathers 实时拉取，下面保留空数组兼容
+// ====================================================
+const SEED_FEATHERS = [/* moved to Supabase via /api/feathers */];
+const SEED_FEATHERS_LEGACY_PLACEHOLDER = [
+  { title:"夜路灯",   name:"河河",   mbti:"INFP", source:"《千千静千》· 读后感",
+    content:"他说他从不看夜路灯，因为灯都是给赶路的人看的。那是我听过最温柔的孤独。",
+    tags:["独处","夜晚","温柔"], color:"蓝", reach:true,  ts:"2026-06-24" },
+  { title:"深交",     name:"小鱼",   mbti:"ENFP", source:"《反脆弱》· Nassim Taleb",
+    content:"所谓深交，不是同意他的看法，是愿意在他的看法里多住一会儿。",
+    tags:["关系","质疑"], color:"黄", reach:true, ts:"2026-06-25" },
+  { title:"乘电梯",   name:"陆吐司", mbti:"INFJ", source:"日记 · 6.18",
+    content:"今天乘电梯遇见邻居妹妹拿着探险手册，我突然想起我也曾经相信过世界是由「吃不下饭」堆成的。",
+    tags:["成长","城市","独处"], color:"粉", reach:false, ts:"2026-06-18" },
+  { title:"东河",     name:"夜柔",   mbti:"ENFP", source:"日记 · 6.22",
+    content:"从东干运河骨骑到拱寸桥，水边柳条被风吻了一路，原来我也可以是被吻过的东西。",
+    tags:["自然","城市","温柔"], color:"绿", reach:true, ts:"2026-06-22" },
+  { title:"读书会后", name:"森森",   mbti:"INTP", source:"· 大屋顶读书会",
+    content:"三个人为一个句子爆起来吵架，最后产生的不是结论。是三个互相、以及自己。",
+    tags:["关系","读书","质疑"], color:"紫", reach:true, ts:"2026-06-21" }
+];
+
+// ====================================================
+// 全局状态
+// ====================================================
+const STORAGE_KEY = "pocha-feathers-v1";
+let feathers = [];
+let activeVenue = "all";
+let activeWord = null;
+
+// ====================================================
+// API 客户端
+// ====================================================
+const URL_TOKEN = new URLSearchParams(location.search).get('t')
+                || new URLSearchParams(location.search).get('token')
+                || '';
+
+async function apiFetchFeathers() {
+  if (!URL_TOKEN) return [];
+  try {
+    const res = await fetch('/api/feathers?token=' + encodeURIComponent(URL_TOKEN) + '&limit=100');
+    if (!res.ok) return [];
+    const data = await res.json();
+    // 映射后端字段到前端期望字段
+    return (data.feathers || []).map(r => ({
+      title:   r.title,
+      name:    r.pen_name,
+      mbti:    r.mbti || '',
+      source:  r.source || '',
+      content: r.excerpt,
+      tags:    r.tags || [],
+      color:   ({blue:'蓝',pink:'粉',yellow:'黄',green:'绿',purple:'紫'})[r.mood] || '蓝',
+      reach:   !!r.allow_claim,
+      ts:      (r.approved_at || r.created_at || '').slice(0,10)
+    }));
+  } catch (e) { return []; }
+}
+
+async function apiDrop(payload) {
+  const res = await fetch('/api/drop', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token: URL_TOKEN, ...payload })
+  });
+  const data = await res.json().catch(() => ({}));
+  return { ok: res.ok && data.ok, error: data.error, status: res.status };
+}
+
+// ====================================================
+// Tab 切换
+// ====================================================
+document.querySelectorAll(".tab").forEach(t => {
+  t.addEventListener("click", () => {
+    document.querySelectorAll(".tab").forEach(x => x.classList.remove("active"));
+    document.querySelectorAll(".tab-panel").forEach(x => x.classList.remove("active"));
+    t.classList.add("active");
+    document.getElementById("panel-" + t.dataset.panel).classList.add("active");
+  });
+});
+
+// ====================================================
+// Tab1 · 渲染
+// ====================================================
+function renderFilters() {
+  const wrap = document.getElementById("filters");
+  // 已有 全部 chip
+  const venues = [...new Set(READING_EVENTS.map(e => e.venue))];
+  venues.forEach(v => {
+    const c = document.createElement("span");
+    c.className = "chip";
+    c.dataset.filter = v;
+    c.textContent = v;
+    c.addEventListener("click", () => {
+      document.querySelectorAll(".chip").forEach(x => x.classList.remove("active"));
+      c.classList.add("active");
+      activeVenue = v;
+      renderEvents();
+    });
+    wrap.appendChild(c);
+  });
+  document.querySelector('.chip[data-filter="all"]').addEventListener("click", function(){
+    document.querySelectorAll(".chip").forEach(x => x.classList.remove("active"));
+    this.classList.add("active");
+    activeVenue = "all";
+    renderEvents();
+  });
+}
+
+function parseDateForSort(dateStr) {
+  // "2026-06-27" 或 "每周X..."
+  if (/^\d{4}-\d{2}-\d{2}/.test(dateStr)) return new Date(dateStr).getTime();
+  return Date.now() + 1e10;  // 周期活动排后面
+}
+
+function renderEvents() {
+  const list = document.getElementById("eventList");
+  const filtered = (activeVenue === "all"
+    ? READING_EVENTS
+    : READING_EVENTS.filter(e => e.venue === activeVenue))
+    .slice().sort((a,b) => parseDateForSort(a.date) - parseDateForSort(b.date));
+
+  document.getElementById("evCount").textContent = filtered.length;
+
+  if (!filtered.length) {
+    list.innerHTML = '<div class="empty">这家书店暂无收录的活动 ☕</div>';
+    return;
+  }
+
+  list.innerHTML = filtered.map((e,i) => {
+    let month = "近期", day = "—", week = "";
+    if (/^\d{4}-\d{2}-\d{2}/.test(e.date)) {
+      const d = new Date(e.date);
+      month = (d.getMonth()+1) + "月";
+      day = d.getDate();
+      week = ["日","一","二","三","四","五","六"][d.getDay()];
+    } else {
+      month = "周期";
+      day = e.date.replace(/每周/,"周").substring(0,2);
+      week = "活动";
+    }
+    return `
+      <div class="event" data-idx="${i}">
+        <div class="date-stamp">
+          <div class="month">${month}</div>
+          <div class="day">${day}</div>
+          <div class="week">${week ? "周"+week : ""}</div>
+        </div>
+        <div class="info">
+          <div class="title">${e.title}</div>
+          <div class="venue">${e.venue} · ${e.time}</div>
+          <div class="meta">
+            <span>👤 ${e.host}</span>
+            <span>💰 ${e.fee}</span>
+          </div>
+          <div class="topic">${e.topic}</div>
+        </div>
+        <div class="actions">
+          <span class="conf-badge ${e.confidence}">${e.confidence === 'high' ? '已确认' : e.confidence === 'medium' ? '待核实' : '估计'}</span>
+          <button class="btn-want" data-idx="${i}">想去 · 邀人</button>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  list.querySelectorAll(".btn-want").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const idx = +btn.dataset.idx;
+      const e = filtered[idx];
+      const txt = `📚 一起去读书吗\n${e.title}\n🗓 ${e.date} ${e.time}\n📍 ${e.venue}\n${e.topic ? '主题：'+e.topic+'\n' : ''}${e.fee}\n\n有兴趣的朋友 +1 接龙：\n1.`;
+      copy(txt);
+      btn.textContent = "已复制 ✓";
+      btn.classList.add("copied");
+      setTimeout(() => { btn.textContent = "想去 · 邀人"; btn.classList.remove("copied"); }, 2000);
+    });
+  });
+}
+
+function renderVenuesAndMap() {
+  // venue list
+  const vl = document.getElementById("venueList");
+  vl.innerHTML = VENUES.map((v,i) => `
+    <div class="venue-item" data-vid="${v.id}">
+      <div class="v-num">${i+1}</div>
+      <div class="v-info">
+        <div class="v-name">${v.name}</div>
+        <div class="v-area">${v.area}</div>
+      </div>
+    </div>
+  `).join("");
+
+  // map markers
+  const mm = document.getElementById("venueMarkers");
+  mm.innerHTML = VENUES.map((v,i) => `
+    <circle class="v-marker" cx="${v.x}" cy="${v.y}" r="5" data-vid="${v.id}"></circle>
+    <text class="v-label" x="${v.x + 8}" y="${v.y + 3}">${i+1}</text>
+  `).join("");
+
+  // click venue → filter events
+  const trigger = (vid) => {
+    const venue = VENUES.find(v => v.id === vid);
+    if (!venue) return;
+    // 用 name 模糊匹配 chip
+    const chip = [...document.querySelectorAll(".chip")].find(c =>
+      c.dataset.filter && c.dataset.filter.includes(venue.name.split("·")[0])
+    );
+    if (chip) chip.click();
+  };
+  vl.querySelectorAll(".venue-item").forEach(el => el.addEventListener("click", () => trigger(el.dataset.vid)));
+  mm.querySelectorAll(".v-marker").forEach(el => el.addEventListener("click", () => trigger(el.dataset.vid)));
+}
+
+// ====================================================
+// Tab2 · 词云 + 纸片墙
+// ====================================================
+function rebuildTagFilter() {
+  // 聚合所有标签
+  const counter = {};
+  feathers.forEach(f => {
+    (f.tags || []).forEach(t => { counter[t] = (counter[t]||0) + 1; });
+  });
+  const items = Object.entries(counter).sort((a,b) => b[1]-a[1]);
+  const wrap = document.getElementById("tagFilter");
+  document.getElementById("featherCount").textContent = feathers.length;
+
+  if (!items.length) {
+    wrap.innerHTML = '';
+    return;
+  }
+
+  let html = `<span class="tag-chip${activeWord===null?' active':''}" data-w="">全部</span>`;
+  html += items.map(([w,c]) =>
+    `<span class="tag-chip${activeWord===w?' active':''}" data-w="${w}">${w}<span class="cnt">·${c}</span></span>`
+  ).join("");
+  wrap.innerHTML = html;
+
+  wrap.querySelectorAll(".tag-chip").forEach(el => {
+    el.addEventListener("click", () => {
+      const w = el.dataset.w;
+      activeWord = w === "" ? null : (activeWord === w ? null : w);
+      rebuildTagFilter();
+      renderWall();
+    });
+  });
+}
+
+function renderWall() {
+  const wall = document.getElementById("wall");
+  const list = activeWord
+    ? feathers.filter(f => (f.tags||[]).includes(activeWord))
+    : feathers;
+
+  if (!list.length) {
+    wall.innerHTML = '<div class="empty" style="grid-column:1/-1;">这个词下还没有羽毛 ✒️</div>';
+    return;
+  }
+
+  const colorMap = { "蓝":"blue","粉":"pink","黄":"yellow","绿":"green","紫":"purple" };
+
+  wall.innerHTML = list.slice().reverse().map((f,i) => {
+    const rot = ((i % 5) - 2) * 0.7;  // -1.4° ~ 1.4°
+    const c = colorMap[f.color] || "blue";
+    return `
+      <div class="note c-${c}" style="--rot:${rot}deg">
+        ${f.title ? `<div style="font-size:13px;color:var(--tea-3);font-weight:600;letter-spacing:2px;margin-bottom:8px;">${f.title}</div>` : ''}
+        <div class="content">
+          <span class="quote-open">「</span>${escapeHtml(f.content)}<span class="quote-close">」</span>
+        </div>
+        ${f.source ? `<div class="source">${escapeHtml(f.source)}</div>` : ''}
+        <div class="footer">
+          <div>
+            <span class="author">${escapeHtml(f.name)}</span>
+            ${f.mbti ? `<span class="mbti">${f.mbti}</span>` : ''}
+          </div>
+          <div class="tags">${(f.tags||[]).map(t=>'#'+t).join(' ')}</div>
+        </div>
+        ${f.reach ? `<div class="reach" data-name="${escapeHtml(f.name)}">想找TA聊聊 →</div>` : ''}
+      </div>
+    `;
+  }).join("");
+
+  wall.querySelectorAll(".reach").forEach(el => {
+    el.addEventListener("click", () => {
+      copy(`@${el.dataset.name} 看到你写的这一句，我也想聊聊。`);
+      el.textContent = "已复制邀约语 ✓";
+      setTimeout(() => el.textContent = "想找TA聊聊 →", 2000);
+    });
+  });
+}
+
+function escapeHtml(s){ return String(s||"").replace(/[<>&"]/g, c => ({"<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;"}[c])); }
+
+// ====================================================
+// 投递表单
+// ====================================================
+let activeColor = "蓝";
+document.querySelectorAll("#colorPicker .color-dot").forEach(d => {
+  d.addEventListener("click", () => {
+    document.querySelectorAll("#colorPicker .color-dot").forEach(x => x.classList.remove("active"));
+    d.classList.add("active");
+    activeColor = d.dataset.c;
+  });
+});
+
+document.getElementById("btnSubmit").addEventListener("click", async () => {
+  const name = document.getElementById("f-name").value.trim();
+  const content = document.getElementById("f-content").value.trim();
+  if (!name) { showToast("先取个花名 ✒️"); return; }
+  if (!content) { showToast("写点什么再投 ✒️"); return; }
+
+  const tagsRaw = document.getElementById("f-tags").value.trim();
+  const tags = tagsRaw ? tagsRaw.split(/[\s,，、]+/).filter(Boolean).slice(0,3) : [];
+  const moodMap = {"蓝":"blue","粉":"pink","黄":"yellow","绿":"green","紫":"purple"};
+
+  const btn = document.getElementById("btnSubmit");
+  btn.disabled = true;
+  btn.textContent = "投递中…";
+
+  const payload = {
+    title:       document.getElementById("f-title").value.trim() || content.slice(0, 8),
+    excerpt:     content,
+    pen_name:    name,
+    mbti:        document.getElementById("f-mbti").value || '',
+    source:      document.getElementById("f-source").value.trim() || '',
+    tags,
+    mood:        moodMap[activeColor] || "blue",
+    allow_claim: document.getElementById("f-reach").checked
+  };
+
+  const r = await apiDrop(payload);
+  btn.disabled = false;
+  btn.textContent = "投递入墙";
+
+  if (!r.ok) {
+    if (r.status === 403) {
+      showToast("链接已失效，请向局长要新的邀请");
+    } else if (r.status === 429) {
+      showToast("今日投递已达上限，明天再来 ☕");
+    } else {
+      showToast("投递失败：" + (r.error || "未知错误"));
+    }
+    return;
+  }
+
+  // 清空表单
+  document.getElementById("dropForm").reset();
+  document.querySelectorAll("#colorPicker .color-dot").forEach(x => x.classList.remove("active"));
+  document.querySelector('#colorPicker .color-dot.blue').classList.add("active");
+  activeColor = "蓝";
+
+  showToast("已投递 · 等候局长上墙 ☕");
+});
+
+// ====================================================
+// Toast & 剪贴板
+// ====================================================
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(window.__tt);
+  window.__tt = setTimeout(() => t.classList.remove("show"), 2200);
+}
+function copy(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).then(() => showToast("已复制 📋"));
+  } else {
+    const ta = document.createElement("textarea");
+    ta.value = text; ta.style.position="fixed"; ta.style.left="-9999px";
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); showToast("已复制 📋"); }
+    catch(e) { showToast("复制失败 · 请手动选中"); }
+    document.body.removeChild(ta);
+  }
+}
+
+// ====================================================
+// 初始化
+// ====================================================
+(async function init() {
+  // Token gate：无 token 整页换成提示
+  if (!URL_TOKEN) {
+    document.body.innerHTML = `
+      <div style="max-width:520px;margin:120px auto;padding:48px;background:#FDF8EF;border:1px solid #E7DFCB;border-radius:14px;font-family:'Songti SC','STSong',serif;text-align:center;color:#5A4A35;">
+        <div style="font-size:32px;margin-bottom:24px;">🍵</div>
+        <h1 style="font-size:22px;font-weight:600;margin:0 0 16px;letter-spacing:.06em;color:#6E5535;">泼茶 · 半私域</h1>
+        <p style="line-height:1.9;color:#7E6B4F;">请通过完整的邀请链接进入</p>
+        <p style="font-size:13px;color:#A89478;margin-top:24px;">链接形如 <code style="background:#F1E8D2;padding:2px 6px;border-radius:4px;">/?t=xxx</code></p>
+      </div>`;
+    return;
+  }
+
+  // 拉取墙数据
+  feathers = await apiFetchFeathers();
+
+  renderFilters();
+  renderEvents();
+  renderVenuesAndMap();
+  rebuildTagFilter();
+  renderWall();
+})();
+</script>
+
+</body>
+</html>

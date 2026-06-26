@@ -1,0 +1,12 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "crons": [
+    {
+      "path": "/api/cron/sync-dingding",
+      "schedule": "30 14 * * *"
+    }
+  ],
+  "rewrites": [
+    { "source": "/admin", "destination": "/admin.html" }
+  ]
+}
