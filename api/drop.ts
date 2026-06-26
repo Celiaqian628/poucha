@@ -50,7 +50,7 @@ export default async function handler(req: Request) {
 
   // 频控
   const ip = getClientIp(req);
-  const ipHash = hashIp(ip);
+  const ipHash = await hashIp(ip);
   const today = new Date().toISOString().slice(0, 10);
   const { count, error: countErr } = await supabase
     .from('feathers')
