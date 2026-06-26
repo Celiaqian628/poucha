@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+// Edge-runtime friendly: use Web Crypto API (globalThis.crypto.subtle), not node:crypto
 
 const PUBLIC = process.env.PUBLIC_TOKEN || '';
 const ADMIN  = process.env.ADMIN_TOKEN  || '';
@@ -12,13 +12,21 @@ export function checkPublicToken(token: string | null): boolean {
 export function checkAdminToken(authHeader: string | null): boolean {
   if (!ADMIN) return false;
   if (!authHeader) return false;
-  // 支持 "Bearer xxx" 或裸 token
   const t = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : authHeader;
   return t === ADMIN;
 }
 
-export function hashIp(ip: string): string {
-  return createHash('sha256').update(ip + ':' + SALT).digest('hex').slice(0, 32);
+function bytesToHex(buf: ArrayBuffer): string {
+  const a = new Uint8Array(buf);
+  let s = '';
+  for (let i = 0; i < a.length; i++) s += a[i].toString(16).padStart(2, '0');
+  return s;
+}
+
+export async function hashIp(ip: string): Promise<string> {
+  const data = new TextEncoder().encode(ip + ':' + SALT);
+  const buf = await crypto.subtle.digest('SHA-256', data);
+  return bytesToHex(buf).slice(0, 32);
 }
 
 export function getClientIp(req: Request): string {
